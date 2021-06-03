@@ -13,8 +13,15 @@ So `Feature [#EX]` means that feature is implemented and tested, however the tes
 
 
 **DEPS**
-- base58 [#XX]
-- ecdsa (SECP256k1) [XXX]
-- sha256 [#XX]
-- ripemd160 [XXX]
-- ~~
+- base58 [##X]
+- ecdsa (SECP256k1) [##X]
+  
+```
+priv -> OK
+pub -> OK
+pub_comp -> OK
+W
+```
+- sha256 [##X]
+- ripemd160 [##X]
+- 

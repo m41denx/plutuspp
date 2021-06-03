@@ -1,54 +1,64 @@
 #include <iostream>
 #include <sodium.h>
-#include <openssl/obj_mac.h>
-#include <openssl/ec.h>
-#include "utils/base58.h"
+#include <string>
+#include "utils/hashing.h"
+#include "utils/key.h"
+
 
 void genprivkey(char *xrand);
 void genpublickey(char *privKey);
 void base58(char* hexAddr);
+std::string toHex(const std::string& input);
+std::vector<std::vector<std::string>> genKey(unsigned short int rounds);
+
+/* Chain Ring:
+ *      privateKey
+ *      publicKey
+ *      WIF
+ *      addressUncompressed
+ *      addressCompressed
+ */
 
 
 int main() {
-    char privkey[32];
-    genprivkey(privkey);
-    std::cout << privkey;
+    unsigned short int n=1;
+    //std::cout<<"To generate: ";
+    //std::cin>>n;
+    std::vector<std::vector<std::string>> res;
+    res=genKey(n);
 }
 
+std::vector<std::vector<std::string>> genKey(unsigned short int rounds){
+    std::vector<std::vector<std::string>> chain;
+    for(unsigned short int r=0;r<rounds;r++){
+        std::vector<std::string> ring;
+        //gen privKey
+        ecdsa::Key pKey;
 
-void genprivkey(char *xrand) {
-    randombytes_buf(xrand, 32);
+        std::vector<uint8_t> pkk=pKey.get_priv_key_data();
+        std::string privateKey(pkk.begin(), pkk.end());
+        ring.push_back(toHex(privateKey));
+
+        //gen pubKey
+        std::vector<uint8_t> pkp=pKey.get_pub_key_data();
+        bool dummy = pKey.CalculatePublicKey(true);
+        std::vector<uint8_t> pkp_compressed=pKey.get_pub_key_data();
+        std::string publicKey(pkp.begin(), pkp.end());
+        ring.push_back(toHex(publicKey));
+
+        //std::cout<<"["<<toHex(privateKey)<<" | "<<toHex(publicKey)<<"]";
+    }
+
+    return chain;
 }
 
-void genpublickey(char *privKey) {
-    EC_KEY *key = EC_KEY_new_by_curve_name(NID_secp256k1);
-
-    if (!key) {
-        std::cerr << "Error creating curve key" << '\n';
+std::string toHex(const std::string& input){
+    static const char hex_digits[] = "0123456789ABCDEF";
+    std::string output;
+    output.reserve(input.length() * 2);
+    for (unsigned char c : input){
+        output.push_back(hex_digits[c >> 4]);
+        output.push_back(hex_digits[c & 15]);
     }
-
-    if (!EC_KEY_generate_key(key)) {
-        std::cerr << "Error generating curve key" << '\n';
-        EC_KEY_free(key);
-    }
-
-    BIGNUM const *prv = EC_KEY_get0_private_key(key);
-    if (!prv) {
-        std::cerr << "Error getting private key" << '\n';
-        EC_KEY_free(key);
-    }
-
-    std::cout << "Private key: " << prv << '\n';
-
-    EC_POINT const *pub = EC_KEY_get0_public_key(key);
-    if (!pub) {
-        std::cerr << "Error getting public key" << '\n';
-        EC_KEY_free(key);
-    }
-
-    std::cout << "Public key: " << pub << '\n';
-
-// Use keys here ...
-
-    EC_KEY_free(key);
+    return output;
 }
