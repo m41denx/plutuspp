@@ -1,8 +1,8 @@
 #include <iostream>
 #include <sodium.h>
 #include <string>
-#include "utils/hashing.h"
 #include "utils/key.h"
+#include "utils/addrutils.h"
 
 
 void genprivkey(char *xrand);
@@ -41,12 +41,51 @@ std::vector<std::vector<std::string>> genKey(unsigned short int rounds){
 
         //gen pubKey
         std::vector<uint8_t> pkp=pKey.get_pub_key_data();
-        bool dummy = pKey.CalculatePublicKey(true);
-        std::vector<uint8_t> pkp_compressed=pKey.get_pub_key_data();
         std::string publicKey(pkp.begin(), pkp.end());
         ring.push_back(toHex(publicKey));
 
-        //std::cout<<"["<<toHex(privateKey)<<" | "<<toHex(publicKey)<<"]";
+        //gen compressed
+        bool dummy = pKey.CalculatePublicKey(true);
+        std::vector<uint8_t> pkp_compressed=pKey.get_pub_key_data();
+        std::string publicKeyCompressed(pkp_compressed.begin(), pkp_compressed.end());
+        ring.push_back(toHex(publicKeyCompressed));
+        
+        //gen uncomp address
+	    std::vector<uint8_t> publicKeyVector;
+	    utils::hexstringToBytes(toHex(publicKey), publicKeyVector);
+        std::vector<uint8_t> addressSHA256(SHA256_DIGEST_LENGTH);
+	    utils::sha256(publicKeyVector.data(), publicKeyVector.size(), addressSHA256);
+        std::vector<uint8_t> addressRipemd(RIPEMD160_DIGEST_LENGTH);
+	    utils::ripemd160(&addressSHA256[0], addressSHA256.size(), addressRipemd);
+	    addressRipemd.insert(std::begin(addressRipemd), 0x00);
+	    std::vector<uint8_t> addressHash(SHA256_DIGEST_LENGTH);
+	    utils::sha256(&addressRipemd[0], addressRipemd.size(), addressHash);
+	    utils::sha256(&addressHash[0], addressHash.size(), addressHash);
+	    std::vector<uint8_t>::const_iterator address_iter_first = addressHash.begin();
+	    std::vector<uint8_t>::const_iterator address_iter_last = address_iter_first + 4;
+	    addressRipemd.insert(addressRipemd.end(), address_iter_first, address_iter_last);
+        std::string address = EncodeBase58(addressRipemd);
+        ring.push_back(address);
+
+        //gen comp address
+        std::vector<uint8_t> publicKeyCompressedVector;
+	    utils::hexstringToBytes(toHex(publicKeyCompressed), publicKeyCompressedVector);
+        std::vector<uint8_t> addressCompressedSHA256(SHA256_DIGEST_LENGTH);
+	    utils::sha256(publicKeyCompressedVector.data(), publicKeyCompressedVector.size(), addressCompressedSHA256);
+        std::vector<uint8_t> addressCompressedRipemd(RIPEMD160_DIGEST_LENGTH);
+	    utils::ripemd160(&addressCompressedSHA256[0], addressCompressedSHA256.size(), addressCompressedRipemd);
+	    addressCompressedRipemd.insert(std::begin(addressCompressedRipemd), 0x00);
+	    std::vector<uint8_t> addressCompressedHash(SHA256_DIGEST_LENGTH);
+	    utils::sha256(&addressCompressedRipemd[0], addressCompressedRipemd.size(), addressCompressedHash);
+	    utils::sha256(&addressCompressedHash[0], addressCompressedHash.size(), addressCompressedHash);
+	    std::vector<uint8_t>::const_iterator addressCompressed_iter_first = addressCompressedHash.begin();
+	    std::vector<uint8_t>::const_iterator addressCompressed_iter_last = addressCompressed_iter_first + 4;
+	    addressCompressedRipemd.insert(addressCompressedRipemd.end(), addressCompressed_iter_first, addressCompressed_iter_last);
+        std::string addressCompressed = EncodeBase58(addressCompressedRipemd);
+        ring.push_back(addressCompressed);
+
+        std::cout<<"PRIVATE KEY: "<<toHex(privateKey)<<"\nPUBLIC KEY:\n\tSTD: "<<toHex(publicKey)<<"\n\tCOMP:"<<toHex(publicKeyCompressed)
+        <<"\nADDRESS:\n\tSTD: "<<address<<"\n\tCOMP: "<<addressCompressed<<std::endl;
     }
 
     return chain;

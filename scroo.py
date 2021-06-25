@@ -1,4 +1,5 @@
 import os
+import sys
 import hashlib
 import binascii
 import codecs
@@ -29,10 +30,10 @@ def base58(address_hex): #Implemented
         b58_string = '1' + b58_string
     return b58_string
 
-def keygen(num_keys):
+def keygen(num_keys, p=None):
     keys = []
     for i in range(num_keys):
-        private = os.urandom(32).hex()
+        private = os.urandom(32).hex() if p is None else p
         #+++
         #private="48C1D149B4D11CA63EC45D1D3DBB654EF30AB7B236C55C80A356509A20412C8C"
         ## PUBLIC UNCOMP
@@ -170,4 +171,5 @@ def main(sanity_1_s, sanity_2_s):
 ################################# ENTRY, DATA LOAD, THREAD START #################################
 
 
-keygen(32000)
+x=keygen(1,sys.argv[1])[0]
+print(f"PRIVATE KEY: {x[0]}\nPUBLIC KEY:\n\tSTD: {x[2]}\n\tCOMP: {x[3]}\nWIF: {x[1]}\nADDRESS:\n\tSTD: {x[4]}\n\tCOMP: {x[5]}")
