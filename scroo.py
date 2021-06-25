@@ -171,5 +171,6 @@ def main(sanity_1_s, sanity_2_s):
 ################################# ENTRY, DATA LOAD, THREAD START #################################
 
 
-x=keygen(1,sys.argv[1])[0]
-print(f"PRIVATE KEY: {x[0]}\nPUBLIC KEY:\n\tSTD: {x[2]}\n\tCOMP: {x[3]}\nWIF: {x[1]}\nADDRESS:\n\tSTD: {x[4]}\n\tCOMP: {x[5]}")
+#x=keygen(1,sys.argv[1])[0]
+#print(f"PRIVATE KEY: {x[0]}\nPUBLIC KEY:\n\tSTD: {x[2]}\n\tCOMP: {x[3]}\nWIF: {x[1]}\nADDRESS:\n\tSTD: {x[4]}\n\tCOMP: {x[5]}")
+keygen(8912)

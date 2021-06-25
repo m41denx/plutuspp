@@ -3,6 +3,7 @@
 #include <string>
 #include "utils/key.h"
 #include "utils/addrutils.h"
+#include <thread>
 
 
 void genprivkey(char *xrand);
@@ -10,23 +11,36 @@ void genpublickey(char *privKey);
 void base58(char* hexAddr);
 std::string toHex(const std::string& input);
 std::vector<std::vector<std::string>> genKey(unsigned short int rounds);
+void genThread(unsigned short int work);
 
 /* Chain Ring:
  *      privateKey
  *      publicKey
- *      WIF
  *      addressUncompressed
  *      addressCompressed
  */
 
 
 int main() {
-    unsigned short int n=1;
-    //std::cout<<"To generate: ";
-    //std::cin>>n;
-    std::vector<std::vector<std::string>> res;
-    res=genKey(n);
+    unsigned short int n=8192;
+    unsigned char cores=std::thread::hardware_concurrency();
+    
+    std::vector<std::thread> thrList;
+    for(unsigned char thr=0; thr<cores;thr++){
+        std::thread calcThread(genThread, n/cores);
+        thrList.push_back(std::move(calcThread));
+    }
+    for(unsigned char thr=0; thr<cores;thr++){
+        thrList.at(thr).join();
+    }
 }
+
+
+void genThread(unsigned short int work){
+    std::vector<std::vector<std::string>> res;
+    res=genKey(work);
+}
+
 
 std::vector<std::vector<std::string>> genKey(unsigned short int rounds){
     std::vector<std::vector<std::string>> chain;
@@ -84,8 +98,8 @@ std::vector<std::vector<std::string>> genKey(unsigned short int rounds){
         std::string addressCompressed = EncodeBase58(addressCompressedRipemd);
         ring.push_back(addressCompressed);
 
-        std::cout<<"PRIVATE KEY: "<<toHex(privateKey)<<"\nPUBLIC KEY:\n\tSTD: "<<toHex(publicKey)<<"\n\tCOMP:"<<toHex(publicKeyCompressed)
-        <<"\nADDRESS:\n\tSTD: "<<address<<"\n\tCOMP: "<<addressCompressed<<std::endl;
+        //std::cout<<"PRIVATE KEY: "<<toHex(privateKey)<<"\nPUBLIC KEY:\n\tSTD: "<<toHex(publicKey)<<"\n\tCOMP:"<<toHex(publicKeyCompressed)
+        //<<"\nADDRESS:\n\tSTD: "<<address<<"\n\tCOMP: "<<addressCompressed<<std::endl;
     }
 
     return chain;
