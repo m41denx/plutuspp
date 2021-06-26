@@ -1,3 +1,6 @@
 .vscode/
 .idea/
-plutus++
+/plutus++
+/massif.*
+/*.txt
+/*.pickle

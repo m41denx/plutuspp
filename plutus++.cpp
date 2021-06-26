@@ -1,4 +1,6 @@
 #include <iostream>
+#include <algorithm>
+#include <fstream>
 #include <sodium.h>
 #include <string>
 #include "utils/key.h"
@@ -11,7 +13,7 @@ void genpublickey(char *privKey);
 void base58(char* hexAddr);
 std::string toHex(const std::string& input);
 std::vector<std::vector<std::string>> genKey(unsigned short int rounds);
-void genThread(unsigned short int work);
+void genThread(unsigned short int work, std::vector<std::string> &AddrList);
 
 /* Chain Ring:
  *      privateKey
@@ -21,13 +23,25 @@ void genThread(unsigned short int work);
  */
 
 
-int main() {
-    unsigned short int n=8192;
+int main(int argc, char* argv[]) {
+    unsigned short int n=256;
     unsigned char cores=std::thread::hardware_concurrency();
+
+    //STATS
+    std::cout<<"THREADS: "<<int(cores)<<"\nPopulating from db.txt"<<std::endl;//<<argv[1]<<"...";
+
+    //READ BUF
+    std::ifstream addrListFile("db.txt");
+    std::vector<std::string> AddrList;
+    std::string bufAddr;
+    while(std::getline(addrListFile, bufAddr)){
+        AddrList.push_back(bufAddr);
+    }
+    std::cout<<"Got "<<AddrList.size()<<" Addresses"<<std::endl;
     
     std::vector<std::thread> thrList;
     for(unsigned char thr=0; thr<cores;thr++){
-        std::thread calcThread(genThread, n/cores);
+        std::thread calcThread(genThread, n/cores, std::ref(AddrList));
         thrList.push_back(std::move(calcThread));
     }
     for(unsigned char thr=0; thr<cores;thr++){
@@ -36,9 +50,18 @@ int main() {
 }
 
 
-void genThread(unsigned short int work){
+void genThread(unsigned short int work, std::vector<std::string> &AddrList){
     std::vector<std::vector<std::string>> res;
     res=genKey(work);
+    for(std::vector<std::string> elem: res){
+        if(
+            std::find(AddrList.begin(), AddrList.end(), elem.at(2)) != AddrList.end()
+            || std::find(AddrList.begin(), AddrList.end(), elem.at(2)) != AddrList.end()
+        ){
+            std::cout<<"Holy memes!!! Addr found:\n-----------------\n"
+            <<"PRIVATE KEY: "<<elem.at(0)<<"\nPUBLIC KEY: "<<elem.at(1)<<"\nADDRESS:\n\tSTD: "<<elem.at(2)<<"\n\tCOMP: "<<elem.at(3)<<std::endl;
+        }
+    }
 }
 
 
@@ -62,7 +85,6 @@ std::vector<std::vector<std::string>> genKey(unsigned short int rounds){
         bool dummy = pKey.CalculatePublicKey(true);
         std::vector<uint8_t> pkp_compressed=pKey.get_pub_key_data();
         std::string publicKeyCompressed(pkp_compressed.begin(), pkp_compressed.end());
-        ring.push_back(toHex(publicKeyCompressed));
         
         //gen uncomp address
 	    std::vector<uint8_t> publicKeyVector;
@@ -97,6 +119,9 @@ std::vector<std::vector<std::string>> genKey(unsigned short int rounds){
 	    addressCompressedRipemd.insert(addressCompressedRipemd.end(), addressCompressed_iter_first, addressCompressed_iter_last);
         std::string addressCompressed = EncodeBase58(addressCompressedRipemd);
         ring.push_back(addressCompressed);
+
+
+        chain.push_back(ring);
 
         //std::cout<<"PRIVATE KEY: "<<toHex(privateKey)<<"\nPUBLIC KEY:\n\tSTD: "<<toHex(publicKey)<<"\n\tCOMP:"<<toHex(publicKeyCompressed)
         //<<"\nADDRESS:\n\tSTD: "<<address<<"\n\tCOMP: "<<addressCompressed<<std::endl;
