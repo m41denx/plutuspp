@@ -21,11 +21,11 @@ void genThread(char id, unsigned long int work, std::vector<std::string> &AddrLi
 
 
 int main(int argc, char* argv[]) {
-    unsigned long int n=atoi(argv[2])*4;
+    unsigned long int n=atoi(argv[2]);
     unsigned char cores=std::thread::hardware_concurrency();
 
     //STATS
-    std::cout<<"THREADS: "<<int(cores)<<"\nWork: "<<n<<"\nPopulating from "<<argv[1]<<std::endl;
+    std::cout<<"THREADS: "<<int(cores)<<"\nRequested work: "<<n<<"\nPopulating from "<<argv[1]<<std::endl;
 
     //READ BUF
     std::ifstream addrListFile(argv[1]);
@@ -50,19 +50,20 @@ int main(int argc, char* argv[]) {
 void genThread(char id, unsigned long int work, std::vector<std::string> &AddrList){
     std::vector<std::vector<std::string>> res;
     genKey(work, std::ref(res));
-    std::cout<<"[THR #"<<int(id)<<"] ADDRESSES SCATTERED: "<<work<<"\nSearching"<<std::endl;
+    std::cout<<"[THR #"<<int(id)<<"] ADDRESSES GENERATED: "<<work<<"\nSearching"<<std::endl;
     int psc=0;
-    for(std::vector<std::string> elem: res){
-        if(
-            std::find(AddrList.begin(), AddrList.end(), elem.at(2)) != AddrList.end()
-            || std::find(AddrList.begin(), AddrList.end(), elem.at(2)) != AddrList.end()
-        ){
-            std::cout<<"Holy memes!!! Addr found:\n-----------------\n"
-            <<"PRIVATE KEY: "<<elem.at(0)<<"\nPUBLIC KEY: "<<elem.at(1)<<"\nADDRESS:\n\tSTD: "<<elem.at(2)<<"\n\tCOMP: "<<elem.at(3)<<std::endl;
+    for(std::vector<std::string> elem: res) {
+        if (
+                std::find(AddrList.begin(), AddrList.end(), elem.at(2)) != AddrList.end()
+                || std::find(AddrList.begin(), AddrList.end(), elem.at(2)) != AddrList.end()
+                ) {
+            psc++;
+            std::cout << "Holy memes!!! Addr found:\n-----------------\n"
+                      << "PRIVATE KEY: " << elem.at(0) << "\nPUBLIC KEY: " << elem.at(1) << "\nADDRESS:\n\tSTD: "
+                      << elem.at(2) << "\n\tCOMP: " << elem.at(3) << std::endl;
         }
-//        psc++;
-//        if(psc==256){std::cout<<".";psc=0;}
     }
+        if(psc==0) std::cout<<"No addresses found"<<std::endl;
 }
 
 
