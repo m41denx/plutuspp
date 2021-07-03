@@ -8,11 +8,8 @@
 #include <thread>
 
 
-void genprivkey(char *xrand);
-void genpublickey(char *privKey);
-void base58(char* hexAddr);
 std::string toHex(const std::string& input);
-std::vector<std::vector<std::string>> genKey(unsigned short int rounds);
+void genKey(unsigned short int rounds, std::vector<std::vector<std::string>> &res);
 void genThread(unsigned short int work, std::vector<std::string> &AddrList);
 
 /* Chain Ring:
@@ -38,7 +35,7 @@ int main(int argc, char* argv[]) {
         AddrList.push_back(bufAddr);
     }
     std::cout<<"Got "<<AddrList.size()<<" Addresses"<<std::endl;
-    
+
     std::vector<std::thread> thrList;
     for(unsigned char thr=0; thr<cores;thr++){
         std::thread calcThread(genThread, n/cores, std::ref(AddrList));
@@ -52,7 +49,7 @@ int main(int argc, char* argv[]) {
 
 void genThread(unsigned short int work, std::vector<std::string> &AddrList){
     std::vector<std::vector<std::string>> res;
-    res=genKey(work);
+    genKey(work, std::ref(res));
     for(std::vector<std::string> elem: res){
         if(
             std::find(AddrList.begin(), AddrList.end(), elem.at(2)) != AddrList.end()
@@ -65,8 +62,7 @@ void genThread(unsigned short int work, std::vector<std::string> &AddrList){
 }
 
 
-std::vector<std::vector<std::string>> genKey(unsigned short int rounds){
-    std::vector<std::vector<std::string>> chain;
+void genKey(unsigned short int rounds, std::vector<std::vector<std::string>> &res){
     for(unsigned short int r=0;r<rounds;r++){
         std::vector<std::string> ring;
         //gen privKey
@@ -121,13 +117,11 @@ std::vector<std::vector<std::string>> genKey(unsigned short int rounds){
         ring.push_back(addressCompressed);
 
 
-        chain.push_back(ring);
+        res.push_back(ring);
 
-        //std::cout<<"PRIVATE KEY: "<<toHex(privateKey)<<"\nPUBLIC KEY:\n\tSTD: "<<toHex(publicKey)<<"\n\tCOMP:"<<toHex(publicKeyCompressed)
-        //<<"\nADDRESS:\n\tSTD: "<<address<<"\n\tCOMP: "<<addressCompressed<<std::endl;
+//        std::cout<<"PRIVATE KEY: "<<toHex(privateKey)<<"\nPUBLIC KEY:\n\tSTD: "<<toHex(publicKey)<<"\n\tCOMP:"<<toHex(publicKeyCompressed)
+//        <<"\nADDRESS:\n\tSTD: "<<address<<"\n\tCOMP: "<<addressCompressed<<std::endl;
     }
-
-    return chain;
 }
 
 std::string toHex(const std::string& input){
