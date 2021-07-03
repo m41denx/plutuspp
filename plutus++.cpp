@@ -1,7 +1,7 @@
 #include <iostream>
 #include <algorithm>
+#include <cstdlib>
 #include <fstream>
-#include <sodium.h>
 #include <string>
 #include "utils/key.h"
 #include "utils/addrutils.h"
@@ -9,8 +9,8 @@
 
 
 std::string toHex(const std::string& input);
-void genKey(unsigned short int rounds, std::vector<std::vector<std::string>> &res);
-void genThread(unsigned short int work, std::vector<std::string> &AddrList);
+void genKey(unsigned long int rounds, std::vector<std::vector<std::string>> &res);
+void genThread(char id, unsigned long int work, std::vector<std::string> &AddrList);
 
 /* Chain Ring:
  *      privateKey
@@ -21,14 +21,14 @@ void genThread(unsigned short int work, std::vector<std::string> &AddrList);
 
 
 int main(int argc, char* argv[]) {
-    unsigned short int n=256;
+    unsigned long int n=atoi(argv[2])*4;
     unsigned char cores=std::thread::hardware_concurrency();
 
     //STATS
-    std::cout<<"THREADS: "<<int(cores)<<"\nPopulating from db.txt"<<std::endl;//<<argv[1]<<"...";
+    std::cout<<"THREADS: "<<int(cores)<<"\nWork: "<<n<<"\nPopulating from "<<argv[1]<<std::endl;
 
     //READ BUF
-    std::ifstream addrListFile("db.txt");
+    std::ifstream addrListFile(argv[1]);
     std::vector<std::string> AddrList;
     std::string bufAddr;
     while(std::getline(addrListFile, bufAddr)){
@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
 
     std::vector<std::thread> thrList;
     for(unsigned char thr=0; thr<cores;thr++){
-        std::thread calcThread(genThread, n/cores, std::ref(AddrList));
+        std::thread calcThread(genThread, thr, n/cores, std::ref(AddrList));
         thrList.push_back(std::move(calcThread));
     }
     for(unsigned char thr=0; thr<cores;thr++){
@@ -47,9 +47,11 @@ int main(int argc, char* argv[]) {
 }
 
 
-void genThread(unsigned short int work, std::vector<std::string> &AddrList){
+void genThread(char id, unsigned long int work, std::vector<std::string> &AddrList){
     std::vector<std::vector<std::string>> res;
     genKey(work, std::ref(res));
+    std::cout<<"[THR #"<<int(id)<<"] ADDRESSES SCATTERED: "<<work<<"\nSearching"<<std::endl;
+    int psc=0;
     for(std::vector<std::string> elem: res){
         if(
             std::find(AddrList.begin(), AddrList.end(), elem.at(2)) != AddrList.end()
@@ -58,11 +60,13 @@ void genThread(unsigned short int work, std::vector<std::string> &AddrList){
             std::cout<<"Holy memes!!! Addr found:\n-----------------\n"
             <<"PRIVATE KEY: "<<elem.at(0)<<"\nPUBLIC KEY: "<<elem.at(1)<<"\nADDRESS:\n\tSTD: "<<elem.at(2)<<"\n\tCOMP: "<<elem.at(3)<<std::endl;
         }
+//        psc++;
+//        if(psc==256){std::cout<<".";psc=0;}
     }
 }
 
 
-void genKey(unsigned short int rounds, std::vector<std::vector<std::string>> &res){
+void genKey(unsigned long int rounds, std::vector<std::vector<std::string>> &res){
     for(unsigned short int r=0;r<rounds;r++){
         std::vector<std::string> ring;
         //gen privKey
